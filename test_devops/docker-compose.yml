@@ -4,6 +4,7 @@ services:
     environment:
       - discovery.type=single-node
       - plugins.security.disabled=true
+      - plugins.security.ssl.http.enabled=false
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
     ulimits:
       memlock:
@@ -13,21 +14,35 @@ services:
       - "9200:9200"
     networks:
       - skynet
+    command: >
+      bash -c "bin/opensearch-plugin remove opensearch-security || true &&
+               ./opensearch-docker-entrypoint.sh"
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:9200/_cluster/health?pretty"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2.16.0
     environment:
-      - OPENSEARCH_HOSTS=[htpp://opensearch:9200]
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
       - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
     ports:
       - "5601:5601"
     networks:
       - skynet
+    depends_on:
+      opensearch:
+        condition: service_healthy
 
   app:
     build: .
     depends_on:
-      - opensearch
+      opensearch:
+        condition: service_healthy
+    command: >
+      sh -c "sleep 5 && uvicorn app:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
     networks:

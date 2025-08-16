@@ -4,6 +4,7 @@ import random
 
 app = FastAPI()
 
+
 client = OpenSearch(
     hosts=[{'host': 'opensearch', 'port': 9200}],
     use_ssl=False,
@@ -23,14 +24,14 @@ mapping = {
 }
 
 if not client.indices.exists(index=INDEX_NAME):
-    client.indices.create(INDEX_NAME, body=mapping)
+    client.indices.create(index=INDEX_NAME, body=mapping)
 
 types = ['news', 'blog', 'article', 'report']
 docs = []
 for i in range(5):
     docs.append({
         'title': 'Документ' + str(i),
-        'content': 'Любая рандомная информация для документа' + str(i) + '. ' * 4,
+        'content': f'Любая рандомная информация для документа {i}, ' * 4,
         'content_type': random.choice(types)
     })
 
